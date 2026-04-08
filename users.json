@@ -4,5 +4,17 @@
     "name": "Marc",
     "enabled": true,
     "params": {}
+  },
+  {
+    "id": "aa393357-3aa2-4921-8863-4048d3aeb809",
+    "name": "Jordi",
+    "enabled": true,
+    "params": {}
+  },
+  {
+    "id": "cbb12d31-a7cc-44d3-9c09-b4e199aa929f",
+    "name": "Jordi",
+    "enabled": true,
+    "params": {}
   }
 ]
