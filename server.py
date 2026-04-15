@@ -1,53 +1,101 @@
-from fastapi import FastAPI
-import json
-import os
-import uuid
+from fastapi import FastAPI, Depends, HTTPException
+from pydantic import BaseModel
+from sqlalchemy.orm import Session
+from sqlalchemy import text
+
+from database import get_db
 
 app = FastAPI()
 
-FILE = "users.json"
 
-
-def load_users():
-    if not os.path.exists(FILE):
-        return []
-    with open(FILE, "r") as f:
-        return json.load(f)
-
-
-def save_users(users):
-    with open(FILE, "w") as f:
-        json.dump(users, f, indent=2)
+class UserCreate(BaseModel):
+    nom: str
+    edat: int
+    independent: bool = True
 
 
 @app.get("/users")
-def get_users():
-    return load_users()
+def get_users(db: Session = Depends(get_db)):
+    result = db.execute(text("""
+        SELECT id_usuari, nom, edat, independent
+        FROM usuari
+        ORDER BY id_usuari
+    """))
+
+    users = []
+    for row in result:
+        users.append({
+            "id_usuari": row.id_usuari,
+            "nom": row.nom,
+            "edat": row.edat,
+            "independent": row.independent
+        })
+
+    return users
+
+
+@app.get("/users/{user_id}")
+def get_user(user_id: int, db: Session = Depends(get_db)):
+    result = db.execute(
+        text("""
+            SELECT id_usuari, nom, edat, independent
+            FROM usuari
+            WHERE id_usuari = :user_id
+        """),
+        {"user_id": user_id}
+    )
+
+    row = result.fetchone()
+
+    if not row:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+
+    return {
+        "id_usuari": row.id_usuari,
+        "nom": row.nom,
+        "edat": row.edat,
+        "independent": row.independent
+    }
 
 
 @app.post("/users")
-def create_user(name: str):
-    users = load_users()
+def create_user(user: UserCreate, db: Session = Depends(get_db)):
+    result = db.execute(
+        text("""
+            INSERT INTO usuari (nom, edat, independent)
+            VALUES (:nom, :edat, :independent)
+            RETURNING id_usuari, nom, edat, independent
+        """),
+        {
+            "nom": user.nom,
+            "edat": user.edat,
+            "independent": user.independent
+        }
+    )
 
-    user = {
-        "id": str(uuid.uuid4()),
-        "name": name,
-        "enabled": True,
-        "params": {}
+    row = result.fetchone()
+    db.commit()
+
+    return {
+        "id_usuari": row.id_usuari,
+        "nom": row.nom,
+        "edat": row.edat,
+        "independent": row.independent
     }
-
-    users.append(user)
-    save_users(users)
-
-    return user
 
 
 @app.delete("/users/{user_id}")
-def delete_user(user_id: str):
-    users = load_users()
+def delete_user(user_id: int, db: Session = Depends(get_db)):
+    result = db.execute(
+        text("""
+            DELETE FROM usuari
+            WHERE id_usuari = :user_id
+        """),
+        {"user_id": user_id}
+    )
+    db.commit()
 
-    users = [u for u in users if u["id"] != user_id]
-
-    save_users(users)
+    if result.rowcount == 0:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
 
     return {"status": "deleted"}
