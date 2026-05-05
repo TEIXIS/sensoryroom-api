@@ -1,0 +1,8 @@
+Credencials BBDD:
+
+PostgreSQL
+
+Hostname: localhost
+Database: sensvr_db
+Username: sensvr_user
+Password: 845WK6ILwU53006

@@ -1,0 +1,4 @@
+export DB_PASSWORD="845WK6ILwU53006"
+export DB_HOST="localhost"
+export DB_PORT="5432"
+export DB_NAME="sensvr_db"
